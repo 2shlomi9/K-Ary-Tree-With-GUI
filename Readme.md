@@ -76,3 +76,38 @@ make test
 cd Project_GUI
 qmake
 make
+```
+
+# Clear:
+```bash
+
+# clear all the necessary files:
+## clear Demo & Test:
+cd Sources
+make clean
+
+
+## clear GUI:
+cd Project_GUI
+make clean
+make distclean
+```
+
+
+
+## Running:
+
+```bash
+# running all the necessary files:
+## running Demo:
+./tree
+
+## running test:
+./test
+
+## running GUI:
+cd build
+./K_Ary_Tree
+
+```
+`
