@@ -112,64 +112,45 @@ template<typename T, size_t k=2>
 
     class HeapIterator{
     private:
-        std::queue<Node<T>*> queue;
-        Node<T>* current;
-        bool isOnlyRoot;
+        std::queue<Node<T>*> nodes;
 
     public:
-        HeapIterator(Node<T>* ptr = nullptr) : current(ptr), isOnlyRoot(false){
-            if (ptr != nullptr) {
-                if(ptr->getNumOfChilds() == 0) {
-                    isOnlyRoot = true;
-                }
-                else queue.push(ptr);
-            }
+        HeapIterator(Node<T>* ptr = nullptr){
+            if(ptr != nullptr) nodes.push(ptr);
         }
 
         T& operator*() const {
-			return current->getValue();
+			return nodes.front()->getValue();
 		}
 
         T* operator->() const {
-            return &(current->getValue());
+            return &(nodes.front()->getValue());
         }
 
         HeapIterator& operator++() {
-            if(isOnlyRoot){
-                current = nullptr;
-                return *this;
-            }
-            if(!queue.empty()){
-                if(current == queue.front()){
-                    queue.pop();
-                    if(current->getChild(0))
-                        queue.push(current->getChild(0));
-                    if(current->getChild(1))
-                        queue.push(current->getChild(1)); 
-                    current = queue.front();
-                    queue.pop();
-                    if(current->getChild(0))
-                        queue.push(current->getChild(0));
-                    if(current->getChild(1))
-                        queue.push(current->getChild(1)); 
+            if(!nodes.empty()) {
+                Node<T>* current = nodes.front();
+                nodes.pop();
+                for (size_t i = 0; i < current->getNumOfChilds(); i++)
+                {
+                    nodes.push(current->getChild(i));
                 }
-                else{
-                    current = queue.front();
-                    queue.pop();
-                    if(current->getChild(0))
-                        queue.push(current->getChild(0));
-                    if(current->getChild(1))
-                        queue.push(current->getChild(1)); 
-                }
+                
             }
-            else current = nullptr;
             return *this;
         }
+        HeapIterator operator++(int) {
+            HeapIterator tmp = *this;
+            ++(*this);
+            return tmp;
+        }
         bool operator==(const HeapIterator& other) const {
-            return current == other.current;
+            if(nodes.empty() && other.nodes.empty()) return true;
+            if(nodes.empty() || other.nodes.empty()) return false;
+            return nodes.front() == other.nodes.front();
         }
         bool operator!=(const HeapIterator& other) const {
-            return !(current == other.current);
+            return !(*this == other);
         }
     };
 // -------------------- : myHeap function : --------------------
@@ -210,69 +191,37 @@ template<typename T, size_t k=2>
     
     class PreOrderIterator {
     private:
-        std::stack<Node<T>*> stack;
-        Node<T>* current;
-        bool isOnlyRoot;
+       stack<Node<T>*> nodes;
 
     public:
-        PreOrderIterator(Node<T>* ptr = nullptr) : current(ptr), isOnlyRoot(false){
-            if (ptr != nullptr) {
-                if(ptr->getNumOfChilds() == 0) {
-                    isOnlyRoot = true;
-                }
-                else stack.push(ptr);
-            }
-            
+        PreOrderIterator(Node<T>* ptr){
+            if(ptr != nullptr) nodes.push(ptr);
         }
 
         T& operator*() const {
-			return current->getValue();
+			return nodes.top()->getValue();
 		}
 
         T* operator->() const {
-            return &(current->getValue());
+            return &(nodes.top()->getValue());
         }
 
         PreOrderIterator& operator++() {
-            if(isOnlyRoot){
-                current = nullptr;
-                return *this;
+            if(!nodes.empty()){
+                Node<T>* current = nodes.top();
+                nodes.pop();
+                if(current->getChild(1)) nodes.push(current->getChild(1));
+                if(current->getChild(0)) nodes.push(current->getChild(0));
             }
-        
-            if (!stack.empty()) {
-                if(current == stack.top()){ // in the first itaration current is equal to root and root is the top of the stack
-                    stack.pop();
-                    if(current->getChild(1))
-                        stack.push(current->getChild(1));
-                    if(current->getChild(0))
-                        stack.push(current->getChild(0));
-                    if(!stack.empty()){
-                        current = stack.top();
-                        stack.pop();
-                    }
-                    if(current->getChild(1))
-                        stack.push(current->getChild(1));
-                    if(current->getChild(0))
-                        stack.push(current->getChild(0));                    
-                }
-                else{
-                    current = stack.top();
-                    stack.pop();
-                    if(current->getChild(1))
-                        stack.push(current->getChild(1));
-                    if(current->getChild(0))
-                        stack.push(current->getChild(0));        
-                }
-                    
-            }
-            else current = nullptr;
             return *this;
         }
         bool operator==(const PreOrderIterator& other) const {
-            return current == other.current;
+            if(this->nodes.empty() && other.nodes.empty()) return true;
+            if(this->nodes.empty() || other.nodes.empty()) return false;
+            return this->nodes.top() == other.nodes.top();
         }
         bool operator!=(const PreOrderIterator& other) const {
-            return !(current == other.current);
+            return !(*this == other);
         }
     };
     
@@ -280,71 +229,40 @@ template<typename T, size_t k=2>
 
     class PostOrderIterator {
     private:
-        std::stack<Node<T>*> stack;
-        std::stack<Node<T>*> tempStack;
-        Node<T>* current;
-        bool isOnlyRoot;
+        stack<Node<T>*> nodes;
 
-        void fillStack(){
-            while(!tempStack.empty()){
-                Node<T>* node = tempStack.top();
-                tempStack.pop();
-                stack.push(node);
-                if(node->getChild(0))
-                    tempStack.push(node->getChild(0));
-                if(node->getChild(1))
-                    tempStack.push(node->getChild(1));
-            }
-
+        void fillStack(Node<T>* node){
+            if(!node) return;
+            	nodes.push(node);
+            if(node->getChild(1)) fillStack(node->getChild(1));
+            if(node->getChild(0)) fillStack(node->getChild(0));
         }
-        
-        Node<T>* pushLeftChildren(Node<T>* node) {
-            while (node->getChild(0)) {
-                node = node->getChild(0);
-            }
-            return node;
-        }
-
 
     public:
-        PostOrderIterator(Node<T>* ptr = nullptr) : current(ptr), isOnlyRoot(false){
-            if (ptr != nullptr) {
-                if(ptr->getNumOfChilds() == 0) {
-                    isOnlyRoot = true;
-                }
-                else{
-                    tempStack.push(ptr);
-                    fillStack();
-                    current = pushLeftChildren(ptr);
-                    stack.pop();
-                }
-            }
+        PostOrderIterator(Node<T>* ptr) {
+            if(ptr != nullptr) fillStack(ptr);
         }
 
         T& operator*() const {
-			return current->getValue();
+			return nodes.top()->getValue();
 		}
 
         T* operator->() const {
-            return &(current->getValue());
+            return &(nodes.top()->getValue());
         }
         PostOrderIterator& operator++() {
-            if(isOnlyRoot){
-                current = nullptr;
-                return *this;
+            if(!nodes.empty()){
+                nodes.pop();
             }
-            if(!stack.empty()){
-            current = stack.top();
-            stack.pop();
-            }
-            else current = nullptr;
             return *this;
         }
         bool operator==(const PostOrderIterator& other) const {
-            return current == other.current;
+            if(this->nodes.empty() && other.nodes.empty()) return true;
+            if(this->nodes.empty() || other.nodes.empty()) return false;
+            return this->nodes.top() == other.nodes.top();
         }
         bool operator!=(const PostOrderIterator& other) const {
-            return !(current == other.current);
+            return !(*this == other);
         }
     };
 
@@ -353,131 +271,90 @@ template<typename T, size_t k=2>
 
     class InOrderIterator {
     private:
-        std::stack<Node<T>*> stack;
-        Node<T>* current;
-        bool isOnlyRoot;
+        stack<Node<T>*> nodes;
+        void fillStack(Node<T>* node){
+            if(!node) return;
+            if(node->getChild(1)) fillStack(node->getChild(1));
+            nodes.push(node);
+            if(node->getChild(0)) fillStack(node->getChild(0));
 
-        void fillStackByLeft(Node<T>* node){
-            while(node){
-                stack.push(node);
-                node = node->getChild(0);
-            }
-        }
-                
-        Node<T>* pushLeftChildren(Node<T>* node) {
-            while (node->getChild(0)) {
-                node = node->getChild(0);
-            }
-            return node;
-        }
+        }        
 
     public:
-        InOrderIterator(Node<T>* ptr = nullptr) : current(ptr), isOnlyRoot(false){
-            if (ptr != nullptr) {
-                if(ptr->getNumOfChilds() == 0) {
-                    isOnlyRoot = true;
-                }
-                else{
-                    fillStackByLeft(ptr);
-                    current = pushLeftChildren(ptr);
-                    stack.pop();
-                }
-            }
+        InOrderIterator(Node<T>* ptr){
+            if(ptr != nullptr) fillStack(ptr);
         }
 
         T& operator*() const {
-			return current->getValue();
+			return nodes.top()->getValue();
 		}
 
         T* operator->() const {
-            return &(current->getValue());
+            return &(nodes.top()->getValue());
         }
 
         InOrderIterator& operator++() {
-            if(isOnlyRoot){
-                current = nullptr;
-                return *this;
-            }
-            if(!stack.empty()){
-                current = stack.top();
-                stack.pop();
-                if(current->getChild(1)){
-                    fillStackByLeft(current->getChild(1));
-                }
-            }
-            else current = nullptr;
+            if(!nodes.empty()) nodes.pop();
             return *this;
         }
 
+        InOrderIterator& operator++(int) {
+            InOrderIterator tmp = *this;
+            ++(*this);
+            return tmp;
+        }
+
         bool operator==(const InOrderIterator& other) const {
-            return current == other.current;
+            if(this->nodes.empty() && other.nodes.empty()) return true;
+            if(this->nodes.empty() || other.nodes.empty()) return false;
+            return this->nodes.top() == other.nodes.top();
         }
         bool operator!=(const InOrderIterator& other) const {
-            return !(current == other.current);
+            return !(*this == other);
         }
     };
 
 // -------------------- : BFSIterator Class : --------------------
     class BFSIterator {
     private:
-        std::queue<Node<T>*> queue;
-        Node<T>* current;
-        bool isOnlyRoot;
-
+        std::queue<Node<T>*> nodes;
     public:
-        BFSIterator(Node<T>* ptr = nullptr) : current(ptr), isOnlyRoot(false){
-            if (ptr != nullptr) {
-                if(ptr->getNumOfChilds() == 0) {
-                    isOnlyRoot = true;
-                }
-                else queue.push(ptr);
-            }
+        BFSIterator(Node<T>* ptr) {
+           if(ptr != nullptr) nodes.push(ptr);
         }
 
         T& operator*() const {
-			return current->getValue();
+			return nodes.front()->getValue();
 		}
 
         T* operator->() const {
-            return &(current->getValue());
+            return &(nodes.front()->getValue());
         }
 
         BFSIterator& operator++() {
-            if(isOnlyRoot){
-                current = nullptr;
-                return *this;
-            }
-            if(!queue.empty()){
-                if(current == queue.front()){
-                    queue.pop();
-                    for (size_t i = 0; i < current->getNumOfChilds(); ++i) {
-                        if(current->getChild(i))
-                            queue.push(current->getChild(i));
-                    }
-                    current = queue.front();
-                    queue.pop();
-                    for (size_t i = 0; i < current->getNumOfChilds(); ++i) {
-                        if(current->getChild(i))
-                            queue.push(current->getChild(i));
-                    }
+            if(!nodes.empty()) {
+                Node<T>* current = nodes.front();
+                nodes.pop();
+                for (size_t i = 0; i < current->getNumOfChilds(); i++)
+                {
+                    nodes.push(current->getChild(i));
                 }
-                else{
-                    current = queue.front();
-                    queue.pop();
-                    for (size_t i = 0; i < current->getNumOfChilds(); ++i) {
-                        if(current->getChild(i))
-                            queue.push(current->getChild(i));
-                    }
-                }
+                
             }
-            else current = nullptr;
             return *this;
         }
+        BFSIterator operator++(int) {
+            BFSIterator tmp = *this;
+            ++(*this);
+            return tmp;
+        }
         bool operator==(const BFSIterator& other) const {
-            return current == other.current;
+            if(nodes.empty() && other.nodes.empty()) return true;
+            if(nodes.empty() || other.nodes.empty()) return false;
+            return nodes.front() == other.nodes.front();
         }
         bool operator!=(const BFSIterator& other) const {
-            return !(current == other.current);
+            return !(*this == other);
         }
     };
 
@@ -485,59 +362,44 @@ template<typename T, size_t k=2>
 
     class DFSIterator {
     private:
-        std::stack<Node<T>*> stack;
-        Node<T>* current;
-        bool isOnlyRoot;
+        std::stack<Node<T>*> nodes;
 
-        void dfsFillStack(Node<T>* node){
-            if(node){
-                stack.push(node);
-                for(size_t i=0; i<node->getNumOfChilds(); i++){
-                    dfsFillStack(node->getChild(i));
-                }
+        void fillStack(Node<T>* node){
+            if(!node) return;
+            	nodes.push(node);
+            for(int i=node->getNumOfChilds()-1; i>=0; i--){
+                fillStack(node->getChild(static_cast<size_t>(i)));
             }
         }
 
     public:
-        DFSIterator(Node<T>* ptr = nullptr) : current(ptr), isOnlyRoot(false){
+        DFSIterator(Node<T>* ptr = nullptr){
             if (ptr != nullptr) {
-                if(ptr->getNumOfChilds() == 0) {
-                    isOnlyRoot = true;
-                }
-                else{
-                    dfsFillStack(ptr);
-                    current = stack.top();
-                    stack.pop();
-                }
+                fillStack(ptr);
             }
         }
 
         T& operator*() const {
-			return current->getValue();
+			return nodes.top()->getValue();
 		}
 
         T* operator->() const {
-            return &(current->getValue());
+            return &(nodes.top()->getValue());
         }
 
         DFSIterator& operator++() {
-            if(isOnlyRoot){
-                current = nullptr;
-                return *this;
+            if (!nodes.empty()) {
+                nodes.pop();
             }
-            if (!stack.empty()) {
-                current = stack.top();
-                stack.pop();
-            }
-            else current = nullptr;
-
             return *this;
         }
         bool operator==(const DFSIterator& other) const {
-            return current == other.current;
+            if(nodes.empty() && other.nodes.empty()) return true;
+            if(nodes.empty() || other.nodes.empty()) return false;
+            return nodes.top() == other.nodes.top();
         }
         bool operator!=(const DFSIterator& other) const {
-            return !(current == other.current);
+            return !(*this == other);
         }
     };
 

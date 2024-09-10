@@ -7,9 +7,12 @@
 
 This project is part of the System Programming 2 course assignment at Ariel University. The goal is to implement a k-ary tree data structure with various traversal methods and provide a GUI to visualize the tree. The project includes functionality for complex number operations and uses unit tests to ensure correctness.
 
+### Binary tree Structure :
 ![Binary tree Structure](BinaryTree.png)
 
+### Make the binary tree to minimum binary heap :
 ![Make the binary tree to minimum binary heap](MinimumBinaryHeap.png)
+
 ### Files Included
 
 * **Tree.hpp**: 
